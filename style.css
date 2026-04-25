@@ -1,0 +1,39 @@
+.row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 12px;
+  font-size: 18px;
+  flex: 1;
+}
+
+#numberGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#throwDisplay {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.playerBox {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: #eee;
+}
+
+.playerBox.active {
+  background: #0078ff;
+  color: white;
+  font-weight: bold;
+}

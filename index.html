@@ -3,31 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="zero_one_logic.js"></script>
+    <script src="home.js"></script>
     <title>Document</title>
 </head>
 <body>
-    <div>
-        <h2>01 Game</h2>
+    <h1>Darts Score App</h1>
 
-        <label>Start Score:</label>
-        <select id="startScore">
-            <option value="301">301</option>
-            <option value="501">501</option>
-            <option value="701">701</option>
-        </select>
-        <button onclick="startGame()">Start</button>
+    <h2>モードを選択</h2>
 
-        <h3 id="currentScore">Score: -</h3>
-
-        <input id="throw1" type="number" placeholder="1st" />
-        <input id="throw2" type="number" placeholder="2nd" />
-        <input id="throw3" type="number" placeholder="3rd" />
-
-        <button onclick="submitRound()">Submit Round</button>
-
-        <h3 id="result"></h3>
-    </div>
+    <button onclick="selectMode('01')">01 GAME</button>
+    <button onclick="selectMode('cricket')">CRICKET</button>
+    <button onclick="selectMode('countup')">COUNT UP</button>
 
 </body>
 </html>

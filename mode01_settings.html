@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="mode01_settings.js"></script>
+    <link rel="stylesheet" href="settings.css">
+    <title>Document</title>
+</head>
+<body>
+
+<div class="card">
+  <h1>01 GAME 設定</h1>
+
+  <h2>基本設定</h2>
+
+  <label>スタートスコア</label>
+  <select id="startScore">
+    <option value="301">301</option>
+    <option value="501">501</option>
+    <option value="701">701</option>
+  </select>
+
+  <label>アウト方式</label>
+  <select id="outType">
+    <option value="single">シングルアウト</option>
+    <option value="master">マスターアウト</option>
+    <option value="double">ダブルアウト</option>
+  </select>
+
+  <label>ブル</label>
+  <select id="separable">
+    <option value="yes">セパレートブル</option>
+    <option value="no">ファットブル</option>
+  </select>
+
+  <h2>プレイヤー設定</h2>
+
+  <div class="player-count">
+    <button onclick="changePlayerCount(-1)">−</button>
+    <span id="playerCount">1</span> 人
+    <button onclick="changePlayerCount(1)">＋</button>
+  </div>
+
+  <div id="playerNames"></div>
+
+  <label class="switch-label">
+    <input type="checkbox" id="randomOrder">
+    順番をランダムにする
+  </label>
+
+  <button class="start-btn" onclick="goToGame()">ゲーム開始</button>
+</div>
+
+</body>
+</html>
