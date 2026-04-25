@@ -24,16 +24,27 @@ button {
   margin-bottom: 10px;
   font-size: 18px;
 }
+#playerArea {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 1行4人 */
+  gap: 8px;
+  margin-bottom: 10px;
+}
 
 .playerBox {
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  background: #eee;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f0f0f0; /* グレーアウト */
+  text-align: center;
+  font-size: 14px;
 }
 
 .playerBox.active {
-  background: #0078ff;
-  color: white;
+  background: #ffe08a; /* 現在のプレイヤーを強調 */
+  font-weight: bold;
+}
+
+.playerBox .bust {
+  color: red;
   font-weight: bold;
 }

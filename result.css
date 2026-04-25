@@ -1,0 +1,26 @@
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+
+#playerResults {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.playerCard {
+  background: #f7f7f7;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.playerCard h3 {
+  margin: 0 0 8px 0;
+}
+
+.award {
+  color: #d9534f;
+  font-weight: bold;
+}

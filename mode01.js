@@ -27,6 +27,7 @@ window.onload = () => {
 // ゲーム開始（設定反映）
 // -----------------------------
 function initGame(settings) {
+  isBust = false;   // ★ これが必要
   players = settings.players.map(name => ({
     name: name,
     score: Number(settings.startScore)
@@ -56,21 +57,23 @@ function updatePlayerArea() {
   players.forEach((p, i) => {
     const div = document.createElement("div");
     div.className = "playerBox";
+
     if (i === currentPlayer) div.classList.add("active");
 
     let scoreText = p.score;
     if (i === currentPlayer && isBust) {
-      scoreText = "Bust!";
+      scoreText = `<span class="bust">Bust!</span>`;
     }
 
     div.innerHTML = `
-      <strong>${p.name}</strong><br>
-      Score: ${scoreText}
+      <div>${p.name}</div>
+      <div>${scoreText}</div>
     `;
 
     area.appendChild(div);
   });
 }
+
 
 // -----------------------------
 // UI 更新：ラウンド表示
@@ -251,6 +254,11 @@ function submitRound() {
     players[currentPlayer].score = 0;
     updatePlayerArea();
     resetRound();
+    // ★ リザルトページへ遷移
+    localStorage.setItem("resultData", JSON.stringify(players));
+    localStorage.setItem("winner", players[currentPlayer].name);
+
+    window.location.href = "result.html";
     return;
   }
 
@@ -277,6 +285,7 @@ function resetRound() {
 // ターン開始（UI更新）
 // -----------------------------
 function startTurn() {
+  isBust = false; 
   roundStartScore = players[currentPlayer].score;
   updatePlayerArea();
   updateThrowDisplay();
@@ -320,4 +329,39 @@ function checkFinish(lastThrow) {
   }
 
   return true;
+}
+
+function showResultScreen(winner) {
+  document.getElementById("winnerName").textContent = `${winner} WIN!`;
+
+  const container = document.getElementById("playerResults");
+  container.innerHTML = "";
+
+  players.forEach(p => {
+    // スタッツ計算（仮）
+    const darts = p.darts || 0;
+    const ppd = darts > 0 ? (301 / darts).toFixed(2) : "-";
+
+    // アワード（仮）
+    const awards = p.awards?.length ? p.awards.join(", ") : "-";
+
+    // レーティング（仮）
+    const rating = p.rating || "-";
+
+    const card = document.createElement("div");
+    card.className = "resultPlayerCard";
+
+    card.innerHTML = `
+      <h3>${p.name}</h3>
+      <div>Score: ${p.score}</div>
+      <div>PPD: ${ppd}</div>
+      <div>Darts: ${darts}</div>
+      <div class="award">Awards: ${awards}</div>
+      <div>Rating: ${rating}</div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  document.getElementById("resultOverlay").classList.remove("hidden");
 }
