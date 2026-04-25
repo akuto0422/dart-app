@@ -10,29 +10,63 @@ window.onload = () => {
     const card = document.createElement("div");
     card.className = "playerCard";
 
-    const darts = p.darts || 0;
-    const ppd = darts > 0 ? (301 / darts).toFixed(2) : "-";
-    const awards = p.awards?.length ? p.awards.join(", ") : "-";
-    const rating = p.rating || "-";
-
-    // card.innerHTML = `
-    //   <h3>${p.name}</h3>
-    //   <div>Score: ${p.score}</div>
-    //   <div>Darts: ${darts}</div>
-    //   <div>PPD: ${ppd}</div>
-    //   <div class="award">Awards: ${awards}</div>
-    //   <div>Rating: ${rating}</div>
-    // `;
+    const stats = calcEightyPercentStats(p);                   // ★ PPR（1ラウンド平均）
+    const rating = calcRatingFromStats(stats);
+    const awards = summarizeAwards(p.awards);
 
     card.innerHTML = `
       <h3>${p.name}</h3>
       <div>Score: ${p.score}</div>
-      <div>Darts: 未実装</div>
-      <div>PPD: 未実装</div>
-      <div class="award">Awards: 未実装</div>
-      <div>Rating: 未実装</div>
+      <div>Stats: ${stats}</div>
+      <div>Rating: ${rating}</div>
+      <div class="award">Awards:<br>${awards}</div>
     `;
 
     container.appendChild(card);
   });
 };
+function getEightyPercentRound(player) {
+  const target = player.startScore * 0.8;
+  let total = 0;
+
+  for (let i = 0; i < player.roundScores.length; i++) {
+    total += player.roundScores[i];
+    if (total >= target) {
+      return i + 1; // ラウンド番号
+    }
+  }
+  return player.roundScores.length; // 未到達なら最終ラウンド
+}
+function calcEightyPercentStats(player) {
+  const r = getEightyPercentRound(player);
+  const total = player.roundScores.slice(0, r).reduce((a,b)=>a+b,0);
+  return (total / r).toFixed(2);
+}
+
+function calcRatingFromStats(stats) {
+  const s = Number(stats);
+  if (isNaN(s)) return "-";
+
+  if (s < 40) {
+    return 1;
+  } else if (s < 95) {
+    return ((s - 30) / 5).toFixed(1);
+  } else {
+    return ((s - 4) / 7).toFixed(1);
+  }
+}
+
+function summarizeAwards(awards) {
+  if (!awards || awards.length === 0) return "-";
+
+  const map = {};
+
+  awards.forEach(a => {
+    map[a] = (map[a] || 0) + 1;
+  });
+
+  return Object.entries(map)
+    .map(([name, count]) => `${name} × ${count}`)
+    .join("<br>");
+}
+

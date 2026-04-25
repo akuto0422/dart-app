@@ -30,7 +30,10 @@ function initGame(settings) {
   isBust = false;   // ★ これが必要
   players = settings.players.map(name => ({
     name: name,
-    score: Number(settings.startScore)
+    score: Number(settings.startScore),
+    startScore: Number(settings.startScore), // ★追加
+    roundScores: [], // ★追加：ラウンドごとの得点
+    awards: []
   }));
 
   outType = settings.outType;
@@ -252,20 +255,36 @@ function submitRound() {
 
     // 正常フィニッシュ
     players[currentPlayer].score = 0;
+
+    // ★ ラウンド得点を記録
+    players[currentPlayer].roundScores.push(total);
+
+    // ★ アワード判定
+    checkAwards(players[currentPlayer], throws, total);
+
     updatePlayerArea();
     resetRound();
-    // ★ リザルトページへ遷移
+
+    // リザルトページへ遷移
     localStorage.setItem("resultData", JSON.stringify(players));
     localStorage.setItem("winner", players[currentPlayer].name);
-
     window.location.href = "result.html";
     return;
+
   }
 
   // 通常スコア更新
   players[currentPlayer].score = newScore;
+
+  // ★ ラウンド得点を記録
+  players[currentPlayer].roundScores.push(total);
+
+  // ★ アワード判定
+  checkAwards(players[currentPlayer], throws, total);
+
   updatePlayerArea();
   resetRound();
+
 }
 
 // -----------------------------
@@ -331,37 +350,45 @@ function checkFinish(lastThrow) {
   return true;
 }
 
-function showResultScreen(winner) {
-  document.getElementById("winnerName").textContent = `${winner} WIN!`;
+function checkAwards(player, throws, roundScore) {
+  // TON80
+  if (roundScore === 180) {
+    player.awards.push("TON80");
+  } else if (roundScore >= 151) {
+    player.awards.push("HIGH TON");
+  } else if (roundScore >= 100) {
+    player.awards.push("LOW TON");
+  }
 
-  const container = document.getElementById("playerResults");
-  container.innerHTML = "";
+  const labels = throws.map(t => t.label);
 
-  players.forEach(p => {
-    // スタッツ計算（仮）
-    const darts = p.darts || 0;
-    const ppd = darts > 0 ? (301 / darts).toFixed(2) : "-";
+  // HAT TRICK（BULL×3）
+  if (labels.every(l => l === "S-BULL" || l === "D-BULL")) {
+    player.awards.push("HAT TRICK");
+  }
 
-    // アワード（仮）
-    const awards = p.awards?.length ? p.awards.join(", ") : "-";
+  // THREE IN THE BLACK（D-BULL×3）
+  if (labels.every(l => l === "D-BULL")) {
+    player.awards.push("THREE IN THE BLACK");
+  }
 
-    // レーティング（仮）
-    const rating = p.rating || "-";
+  // 3 IN A BED（同じナンバー & 同じ倍率 ×3、BULL除外）
+  const parts = labels.map(l => l.split("-")); // ["S","20"] みたいな形
+  const allNormalNumber =
+    parts.every(p => p[1] !== "BULL" && p[1] !== "MISS" && p[0] !== "S" && p[1] !== undefined);
 
-    const card = document.createElement("div");
-    card.className = "resultPlayerCard";
+  if (allNormalNumber) {
+    const sameBed =
+      parts[0][0] === parts[1][0] &&
+      parts[1][0] === parts[2][0]; // S/D/T が同じ
+    const sameNum =
+      parts[0][1] === parts[1][1] &&
+      parts[1][1] === parts[2][1]; // 番号が同じ
 
-    card.innerHTML = `
-      <h3>${p.name}</h3>
-      <div>Score: ${p.score}</div>
-      <div>PPD: ${ppd}</div>
-      <div>Darts: ${darts}</div>
-      <div class="award">Awards: ${awards}</div>
-      <div>Rating: ${rating}</div>
-    `;
-
-    container.appendChild(card);
-  });
-
-  document.getElementById("resultOverlay").classList.remove("hidden");
+    if (sameBed && sameNum) {
+      player.awards.push("3 IN A BED");
+    }
+  }
 }
+
+
