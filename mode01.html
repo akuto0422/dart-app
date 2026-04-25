@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="mode01.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <title>01</title>
+</head>
+<body>
+
+<h2>01 Game</h2>
+<div id="playerArea"></div>
+<h3 id="roundDisplay">Round: 1</h3>
+
+<div id="throwDisplay" class="row">
+  <div id="t1">-</div>
+  <div id="t2">-</div>
+  <div id="t3">-</div>
+  <button onclick="forceNext()">Next</button>
+</div>
+
+
+<!-- マルチプライヤー行 -->
+<div class="row">
+  <button onclick="setMultiplier('s')">single</button>
+  <button onclick="setMultiplier('d')">double</button>
+  <button onclick="setMultiplier('t')">triple</button>
+  <button onclick="addThrow(50)">d-bull</button>
+  <button onclick="addThrow(25)">s-bull</button>
+</div>
+
+<!-- 数字ボタン -->
+<div id="numberGrid"></div>
+
+<!-- 下段 -->
+<div class="row">
+  <button onclick="undo()">back</button>
+  <button onclick="addThrow(0)">miss</button>
+</div>
+
+</body>
+</html>
