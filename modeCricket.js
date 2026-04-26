@@ -487,7 +487,9 @@ function checkAwardsCricket(player, throws) {
   const validBed = parts.every(p =>
     p.length === 2 &&
     p[1] !== "BULL" &&
-    p[1] !== "MISS"
+    p[1] !== "MISS" &&
+    p[1] !== "0" && 
+    p[0] !== "S"
   );
 
   if (validBed) {

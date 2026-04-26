@@ -204,6 +204,7 @@ function addThrow(base) {
   checkEightyStats();
 
   // ★ ここでは gameFinished を立てない（重要）
+  if(players[currentPlayer].score === 0)gameFinished = true;
 }
 
 
@@ -231,7 +232,7 @@ function undo() {
 // -----------------------------
 function forceNext() {
 
-  if (!isBust) {
+  if (!isBust && !gameFinished) {
     while (throwIndex < 3) {
       addThrow(0);
       if (isBust) break;
@@ -257,7 +258,7 @@ function forceNext() {
     round++;
     updateRoundDisplay();
   }
-
+  gameFinished = false;
   updatePlayerArea();
   startTurn();
 }
@@ -408,7 +409,8 @@ function checkAwards(player, throws, roundScore) {
     p.length === 2 &&
     p[1] !== "BULL" &&
     p[1] !== "MISS" &&
-    p[1] !== "0"
+    p[1] !== "0" && 
+    p[0] !== "S"
   );
 
   if (valid) {
