@@ -20,7 +20,7 @@ const CRICKET_NUMBERS = [15, 16, 17, 18, 19, 20, "BULL"];
 // 初期化
 // -----------------------------
 window.onload = () => {
-  const settings = JSON.parse(localStorage.getItem("settingsCricket"));
+  const settings = JSON.parse(sessionStorage.getItem("settingsCricket"));
   gameType = settings.gameType || "standard";
   initGame(settings);
 };
@@ -270,9 +270,9 @@ function forceNext() {
   const winnerIndex = checkWinner();
   if (winnerIndex !== -1) {
     const winner = players[winnerIndex];
-    localStorage.setItem("resultData", JSON.stringify(players));
-    localStorage.setItem("winner", winner.name);
-    localStorage.setItem("totalRounds", round);
+    sessionStorage.setItem("resultData", JSON.stringify(players));
+    sessionStorage.setItem("winner", winner.name);
+    sessionStorage.setItem("totalRounds", round);
     window.location.href = "cricket_result.html";
     return;
   }
@@ -290,9 +290,9 @@ function forceNext() {
       const winner = winnerIndex !== -1 ? players[winnerIndex] : players[0]; 
       // ※勝者がいない場合は Player1 を勝者扱い（必要なら変更可）
 
-      localStorage.setItem("resultData", JSON.stringify(players));
-      localStorage.setItem("winner", winner.name);
-      localStorage.setItem("totalRounds", round);
+      sessionStorage.setItem("resultData", JSON.stringify(players));
+      sessionStorage.setItem("winner", winner.name);
+      sessionStorage.setItem("totalRounds", round);
       window.location.href = "cricket_result.html";
       return;
     }

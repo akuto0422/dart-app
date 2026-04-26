@@ -47,7 +47,7 @@ function goToGame() {
     settings.players = settings.players.sort(() => Math.random() - 0.5);
   }
 
-  localStorage.setItem("settings01", JSON.stringify(settings));
+  sessionStorage.setItem("settings01", JSON.stringify(settings));
 
   window.location.href = "mode01.html";
 }

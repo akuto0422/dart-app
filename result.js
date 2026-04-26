@@ -1,6 +1,6 @@
-const players = JSON.parse(localStorage.getItem("resultData"));
-const winner = localStorage.getItem("winner");
-const startScore = Number(localStorage.getItem("startScore"));
+const players = JSON.parse(sessionStorage.getItem("resultData"));
+const winner = sessionStorage.getItem("winner");
+const startScore = Number(sessionStorage.getItem("startScore"));
 
 document.getElementById("winnerName").textContent = `${winner} WIN!`;
 

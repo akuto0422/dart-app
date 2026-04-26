@@ -4,16 +4,194 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="home.js"></script>
-    <title>Document</title>
+    <title>Darts Score App</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            text-align: center;
+            background: #f4f4f4;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .mode-btn {
+            width: 80%;
+            max-width: 300px;
+            padding: 18px;
+            margin: 12px auto;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            background: #0078ff;
+            color: white;
+            cursor: pointer;
+            display: block;
+            transition: 0.15s;
+        }
+
+        .mode-btn:hover {
+            background: #005fcc;
+        }
+
+        .mode-btn:active {
+            transform: scale(0.97);
+        }
+
+        .disabled {
+            background: #aaa;
+            cursor: default;
+        }
+        /* フィードバック全体の箱 */
+        .feedback-box {
+            margin: 16px 0;
+            padding: 16px;
+            border-radius: 12px;
+            background: #f7f7f9;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        /* 見出し */
+        .feedback-box h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* ラベル */
+        .feedback-box label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        /* セレクトボックス */
+        .feedback-box select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            background-color: #fff;
+        }
+
+        /* テキストエリア */
+        .feedback-box textarea {
+            width: 100%;
+            min-height: 90px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+
+        /* 送信ボタン */
+        .feedback-box .send-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 999px;
+            border: none;
+            color: #fff;
+            background: #0078d4;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.05s ease;
+        }
+
+        .feedback-box .send-btn:active {
+            transform: scale(0.98);
+            background: #0063b1;
+        }
+
+        /* スマホ向け微調整 */
+        @media (max-width: 480px) {
+            .feedback-box {
+                margin: 12px 8px;
+                padding: 14px;
+            }
+
+            .feedback-box h3 {
+                font-size: 15px;
+            }
+
+            .feedback-box .send-btn {
+                font-size: 13px;
+                padding: 9px 0;
+            }
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Darts Score App</h1>
 
+    <h1>Darts Score App</h1>
     <h2>モードを選択</h2>
 
-    <button onclick="selectMode('01')">01 GAME</button>
-    <button onclick="selectMode('cricket')">CRICKET（未実装）</button>
-    <button onclick="selectMode('countup')">COUNT UP（未実装）</button>
+    <button class="mode-btn" onclick="selectMode('01')">01 GAME</button>
+    <button class="mode-btn" onclick="selectMode('cricket')">CRICKET</button>
+    <button class="mode-btn disabled">COUNT UP（未実装）</button>
+
+
+    <!-- フィードバックフォーム -->
+    <div class="feedback-box">
+    <h3>フィードバック</h3>
+
+    <form id="feedbackForm"
+          action="https://docs.google.com/forms/d/e/1FAIpQLSerd4imlRn39rJphkqa3vPL93ITts1oYyt4wySBd-Fvy06tbQ/formResponse"
+          method="POST"
+          target="hidden_iframe">
+
+        <!-- 優先度（選択式） -->
+        <label>優先度：</label>
+        <select name="entry.17632357" required>
+            <option value="">選択してください</option>
+            <option value="高">高</option>
+            <option value="中">中</option>
+            <option value="低">低</option>
+        </select>
+
+        <!-- 改善内容（長文） -->
+        <label>改善してほしい内容：</label>
+        <textarea name="entry.2000946124"
+                  placeholder="実装してほしい機能や修正点を教えてください"
+                  required></textarea>
+
+        <button class="send-btn">送信</button>
+    </form>
+
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
+</div>
+
+<script>
+    const form = document.getElementById("feedbackForm");
+
+    form.addEventListener("submit", () => {
+        alert("フィードバックありがとうございます！");
+        form.reset();
+    });
+</script>
+
 
 </body>
 </html>

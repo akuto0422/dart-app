@@ -29,7 +29,7 @@ players[i].eightyDarts
 // 初期化
 // -----------------------------
 window.onload = () => {
-  const settings = JSON.parse(localStorage.getItem("settings01"));
+  const settings = JSON.parse(sessionStorage.getItem("settings01"));
   initGame(settings);
 };
 
@@ -247,9 +247,9 @@ function forceNext() {
 
     // ★ 20ラウンド制限
     if (round >= 20) {
-      localStorage.setItem("resultData", JSON.stringify(players));
-      localStorage.setItem("winner", players[currentPlayer].name);
-      localStorage.setItem("startScore", players[currentPlayer].startScore);
+      sessionStorage.setItem("resultData", JSON.stringify(players));
+      sessionStorage.setItem("winner", players[currentPlayer].name);
+      sessionStorage.setItem("startScore", players[currentPlayer].startScore);
       window.location.href = "result.html";
       return;
     }
@@ -296,9 +296,9 @@ function submitRound() {
     updatePlayerArea();
     resetRound();
 
-    localStorage.setItem("resultData", JSON.stringify(players));
-    localStorage.setItem("winner", players[currentPlayer].name);
-    localStorage.setItem("startScore", players[currentPlayer].startScore);
+    sessionStorage.setItem("resultData", JSON.stringify(players));
+    sessionStorage.setItem("winner", players[currentPlayer].name);
+    sessionStorage.setItem("startScore", players[currentPlayer].startScore);
 
     window.location.href = "result.html";
     return;

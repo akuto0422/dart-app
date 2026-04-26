@@ -50,7 +50,7 @@ function startGame() {
   }
 
 	// クリケット設定を保存
-	localStorage.setItem("settingsCricket", JSON.stringify(settings));
+	sessionStorage.setItem("settingsCricket", JSON.stringify(settings));
 
 	// クリケット画面へ
 	window.location.href = "modeCricket.html";

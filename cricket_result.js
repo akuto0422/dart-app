@@ -1,9 +1,9 @@
 // -----------------------------
 // データ取得
 // -----------------------------
-const players = JSON.parse(localStorage.getItem("resultData"));
-const winner = localStorage.getItem("winner");
-const totalRounds = Number(localStorage.getItem("totalRounds"));
+const players = JSON.parse(sessionStorage.getItem("resultData"));
+const winner = sessionStorage.getItem("winner");
+const totalRounds = Number(sessionStorage.getItem("totalRounds"));
 
 // -----------------------------
 // 勝者表示

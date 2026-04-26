@@ -4,6 +4,6 @@ function selectMode(mode) {
   } else if (mode === "cricket") {
     window.location.href = "cricket_settings.html";
   } else if (mode === "countup") {
-    window.location.href = "countup_settings.html";
+    // window.location.href = "countup_settings.html";
   }
 }
