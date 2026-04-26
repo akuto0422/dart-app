@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cricket</title>
+  <script src="modeCricket.js"></script>
+  <link rel="stylesheet" href="modeCricket.css">
+</head>
+<body>
+
+  <h1>Cricket</h1>
+
+  <!-- ラウンド表示 -->
+  <div id="roundDisplay">Round: 1</div>
+
+  <!-- プレイヤー表示 -->
+  <div id="cricketBoard"></div>
+
+
+  <!-- 投げた内容（横4分割） -->
+  <div id="throwDisplay">
+    <div id="t1">1投目: -</div>
+    <div id="t2">2投目: -</div>
+    <div id="t3">3投目: -</div>
+    <button onclick="forceNext()">NEXT</button>
+  </div>
+
+  <!-- BULL / BACK / MISS -->
+  <div class="row4">
+    <button onclick="addThrow('D-BULL')">D-BULL</button>
+    <button onclick="addThrow('S-BULL')">S-BULL</button>
+    <button onclick="undo()">BACK</button>
+    <button onclick="addThrow('MISS')">MISS</button>
+  </div>
+
+  <!-- T-20〜T-15 -->
+  <div class="row6">
+    <button onclick="addThrow('T-20')">T-20</button>
+    <button onclick="addThrow('T-19')">T-19</button>
+    <button onclick="addThrow('T-18')">T-18</button>
+    <button onclick="addThrow('T-17')">T-17</button>
+    <button onclick="addThrow('T-16')">T-16</button>
+    <button onclick="addThrow('T-15')">T-15</button>
+  </div>
+
+  <!-- D-20〜D-15 -->
+  <div class="row6">
+    <button onclick="addThrow('D-20')">D-20</button>
+    <button onclick="addThrow('D-19')">D-19</button>
+    <button onclick="addThrow('D-18')">D-18</button>
+    <button onclick="addThrow('D-17')">D-17</button>
+    <button onclick="addThrow('D-16')">D-16</button>
+    <button onclick="addThrow('D-15')">D-15</button>
+  </div>
+
+  <!-- S-20〜S-15 -->
+  <div class="row6">
+    <button onclick="addThrow('S-20')">S-20</button>
+    <button onclick="addThrow('S-19')">S-19</button>
+    <button onclick="addThrow('S-18')">S-18</button>
+    <button onclick="addThrow('S-17')">S-17</button>
+    <button onclick="addThrow('S-16')">S-16</button>
+    <button onclick="addThrow('S-15')">S-15</button>
+  </div>
+
+</body>
+</html>

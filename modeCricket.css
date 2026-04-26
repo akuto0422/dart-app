@@ -1,0 +1,110 @@
+/* 全体レイアウト */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 10px;
+  background: #fafafa;
+  text-align: center;
+}
+
+/* タイトル */
+h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+/* ラウンド表示 */
+#roundDisplay {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+/* 投げた内容（1投目〜3投目 + NEXT） */
+#throwDisplay {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+/* ボタン共通 */
+button {
+  padding: 12px;
+  font-size: 18px;
+  flex: 1;
+}
+
+button:active {
+  background: #c8c8c8;
+}
+
+/* BULL / BACK / MISS の行（4列） */
+.row4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* T / D / S の行（6列） */
+.row6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* クリケットボード全体 */
+#cricketBoard {
+  width: 100%;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+/* 行レイアウト（全列均等幅） */
+.cricketRow,
+.cricketHeaderRow {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr); /* ← スマホでもズレない */
+}
+
+/* 行ハイライト */
+.cricketRow.active {
+  background: #ffe08a;
+  font-weight: bold;
+}
+
+/* クローズ列（最優先で暗くする） */
+.closedCol {
+  background: #d0d0d0 !important;
+  color: #777 !important;
+}
+
+/* セル共通 */
+.cricketCell,
+.cricketName,
+.cricketScore,
+.cricketHeader {
+  padding: 6px 4px;
+  box-sizing: border-box; /* ← スマホでのズレ防止 */
+  border-right: 1px solid #ccc; /* ← 縦線 */
+  text-align: center;
+}
+
+/* 名前列だけ左寄せ */
+.cricketName {
+  text-align: left;
+}
+
+/* スコア列だけ右寄せ */
+.cricketScore {
+  text-align: right;
+}
+
+/* 最後の列（BULL）は線を消す */
+.cricketRow > div:last-child,
+.cricketHeaderRow > div:last-child {
+  border-right: none;
+}

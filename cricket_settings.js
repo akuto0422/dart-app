@@ -1,9 +1,10 @@
 let playerCount = 1;
-
+// 初期表示
 window.onload = () => {
-  updatePlayerInputs();
+    updatePlayerInputs();
 };
 
+// プレイヤー名入力欄を人数に応じて生成
 function changePlayerCount(delta) {
   playerCount += delta;
 
@@ -26,14 +27,15 @@ function updatePlayerInputs() {
     input.id = `player${i}`;
     container.appendChild(input);
   }
+
+	updateGameTypeAvailability();
 }
 
-function goToGame() {
-  const settings = {
-    startScore: document.getElementById("startScore").value,
-    outType: document.getElementById("outType").value,
-    separable: document.getElementById("separable").value,
-    randomOrder: document.getElementById("randomOrder").checked,
+// ゲーム開始
+function startGame() {
+	const settings = {
+		gameType: document.getElementById("gameType").value,  // ← ★追加
+		randomOrder: document.getElementById("randomOrder").checked,
     players: []
   };
 
@@ -47,7 +49,23 @@ function goToGame() {
     settings.players = settings.players.sort(() => Math.random() - 0.5);
   }
 
-  localStorage.setItem("settings01", JSON.stringify(settings));
+	// クリケット設定を保存
+	localStorage.setItem("settingsCricket", JSON.stringify(settings));
 
-  window.location.href = "mode01.html";
+	// クリケット画面へ
+	window.location.href = "modeCricket.html";
+}
+
+function updateGameTypeAvailability() {
+  const count = playerCount;
+  const gameType = document.getElementById("gameType");
+
+  if (count === 1) {
+    // 1人 → カットスロート禁止
+    gameType.value = "standard"; // 強制的にスタンダードへ
+    gameType.disabled = true;
+  } else {
+    // 2人以上 → 両方選べる
+    gameType.disabled = false;
+  }
 }

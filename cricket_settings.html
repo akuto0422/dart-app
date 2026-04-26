@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cricket Settings</title>
+  <script src="cricket_settings.js"></script>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<div class="card">
+  <h1>Cricket 設定</h1>
+
+  <!-- ゲームタイプ選択 -->
+  <div class="settingRow">
+    <label>ゲームタイプ：</label>
+    <select id="gameType">
+      <option value="standard" selected>スタンダード</option>
+      <option value="cutthroat">カットスロート</option>
+    </select>
+  </div>
+
+  <!-- プレイヤー人数 -->
+  <h2>プレイヤー設定</h2>
+
+  <div class="player-count">
+    <button onclick="changePlayerCount(-1)">−</button>
+    <span id="playerCount">1</span> 人
+    <button onclick="changePlayerCount(1)">＋</button>
+  </div>
+
+  <div id="playerNames"></div>
+
+  <label class="switch-label">
+    <input type="checkbox" id="randomOrder">
+    順番をランダムにする
+  </label>
+
+  <button class="start-btn" onclick="startGame()">ゲーム開始</button>
+</div>
+</body>
+</html>
