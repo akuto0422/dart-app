@@ -1,29 +1,22 @@
 // -----------------------------
 // 変数
 // -----------------------------
-let players = [];          
-let currentPlayer = 0;     
-let round = 1;             
+let players = [];
+let currentPlayer = 0;
+let round = 1;
 
-let throws = [];           
-let throwIndex = 0;        
-let multiplier = "s";      
+let throws = [];
+let throwIndex = 0;
+let multiplier = "s";
 
-let outType = "single";    
-let separable = "yes";     
+let outType = "single";
+let separable = "yes";
 
-let roundStartScore = 0;   
-let isBust = false;        
-
-// ★ 勝利確定後の入力禁止
+let roundStartScore = 0;
+let isBust = false;
 let gameFinished = false;
 
-// ★ 80%スタッツ（プレイヤーごと）
-/*
-players[i].eightyFixed
-players[i].eightyScore
-players[i].eightyDarts
-*/
+let gameHistory = [];
 
 // -----------------------------
 // 初期化
@@ -37,15 +30,14 @@ window.onload = () => {
 // ゲーム開始
 // -----------------------------
 function initGame(settings) {
-  isBust = false;
-  gameFinished = false;
 
   players = settings.players.map(name => ({
     name: name,
     score: Number(settings.startScore),
     startScore: Number(settings.startScore),
-    finishScore: [],
-    roundScores: [],
+
+    history: [],
+
     awards: [],
     eightyFixed: false,
     eightyScore: 0,
@@ -67,7 +59,7 @@ function initGame(settings) {
 }
 
 // -----------------------------
-// UI 更新
+// UI
 // -----------------------------
 function updatePlayerArea() {
   const area = document.getElementById("playerArea");
@@ -84,11 +76,7 @@ function updatePlayerArea() {
       scoreText = `<span class="bust">Bust!</span>`;
     }
 
-    div.innerHTML = `
-      <div>${p.name}</div>
-      <div>${scoreText}</div>
-    `;
-
+    div.innerHTML = `<div>${p.name}</div><div>${scoreText}</div>`;
     area.appendChild(div);
   });
 }
@@ -98,16 +86,13 @@ function updateRoundDisplay() {
 }
 
 function updateThrowDisplay() {
-  document.getElementById("t1").textContent =
-    "1投目: " + (throws[0]?.label || "-");
-  document.getElementById("t2").textContent =
-    "2投目: " + (throws[1]?.label || "-");
-  document.getElementById("t3").textContent =
-    "3投目: " + (throws[2]?.label || "-");
+  document.getElementById("t1").textContent = "1投目: " + (throws[0]?.label || "-");
+  document.getElementById("t2").textContent = "2投目: " + (throws[1]?.label || "-");
+  document.getElementById("t3").textContent = "3投目: " + (throws[2]?.label || "-");
 }
 
 // -----------------------------
-// S / D / T
+// ボタン
 // -----------------------------
 function setMultiplier(m) {
   multiplier = m;
@@ -119,33 +104,27 @@ function updateNumberButtons() {
   const prefix = multiplier.toUpperCase() + "-";
 
   [...grid.children].forEach((btn, index) => {
-    const num = index + 1;
-    btn.textContent = prefix + num;
+    btn.textContent = prefix + (index + 1);
   });
 }
 
-// -----------------------------
-// 80%スタッツ判定
-// -----------------------------
-function checkEightyStats() {
-  const p = players[currentPlayer];
-  if (p.eightyFixed) return;
+function createNumberButtons() {
+  const grid = document.getElementById("numberGrid");
+  grid.innerHTML = "";
 
-  const start = p.startScore;
-  const removed = start - p.score;
-
-  if (removed >= start * 0.8) {
-    p.eightyFixed = true;
-    p.eightyScore = p.score;
-    p.eightyDarts = (round - 1) * 3 + throwIndex;
+  for (let i = 1; i <= 20; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = "S-" + i;
+    btn.onclick = () => addThrow(i);
+    grid.appendChild(btn);
   }
 }
 
 // -----------------------------
-// スロー入力
+// スロー
 // -----------------------------
 function addThrow(base) {
-  if (gameFinished) return;   // ← 勝利確定後は入力禁止
+  if (gameFinished) return;
   if (throwIndex >= 3) return;
 
   let value = base;
@@ -155,83 +134,86 @@ function addThrow(base) {
     if (multiplier === "d") value = base * 2;
     if (multiplier === "t") value = base * 3;
     label = multiplier.toUpperCase() + "-" + base;
-  }
-  else if (base === 25) {
+  } else if (base === 25) {
     value = separable === "yes" ? 25 : 50;
     label = separable === "yes" ? "S-BULL" : "BULL";
-  }
-  else if (base === 50) {
+  } else if (base === 50) {
     value = 50;
     label = "D-BULL";
-  }
-  else if (base === 0) {
+  } else {
     value = 0;
     label = "MISS";
   }
 
   players[currentPlayer].score -= value;
 
-  // -----------------------------
-  // Bust 判定
-  // -----------------------------
-  if (players[currentPlayer].score < 0 || (outType !== "single" && tempScore === 1)) {
-    isBust = true;
-    gameFinished = true;   // ← Bust はラウンド終了なので OK
-
-    throws.push({ value, label });
-    throwIndex++;
-
-    updateThrowDisplay();
-    updatePlayerArea();
-    return;
-  }
-
-  // -----------------------------
-  // 正常入力
-  // -----------------------------
   throws.push({ value, label });
   throwIndex++;
+
+  // Bust判定
+  if (
+    players[currentPlayer].score < 0 ||
+    (outType !== "single" && players[currentPlayer].score === 1)
+  ) {
+    isBust = true;
+    gameFinished = true;
+  }
 
   updateThrowDisplay();
   updatePlayerArea();
 
-  // ★ 80%スタッツ判定
   checkEightyStats();
-
-  // ★ ここでは gameFinished を立てない（重要）
-  if(players[currentPlayer].score === 0)gameFinished = true;
 }
 
-
 // -----------------------------
-// Back（取り消し）
+// Undo
 // -----------------------------
 function undo() {
-  if(round === 1 && throws.length === 0)return;
 
-  if (throwIndex === 0){
-    //前のラウンドに戻らなければならない場合
-    currentPlayer--;
-    throwIndex = 3;
-    if(currentPlayer < 0){
-      currentPlayer = 0;
-      round--;
-      if(round < 1){
-        round = 1;
-      }
-      players[currentPlayer].score = players[currentPlayer].finishScore.pop();
-      throws = players[currentPlayer].roundScores.pop();
-    }
-  }else{
-    //今のラウンドで完結する場合
-    let th = throws.pop();
+  // ラウンド内
+  if (throwIndex > 0) {
+    const player = players[currentPlayer];
+
+    const th = throws.pop();
     throwIndex--;
 
+    player.score += th.value;
+
     isBust = false;
-    gameFinished = false;   // ★戻したら再び入力可能にする
-    console.log(th);
-    players[currentPlayer].score += th.value;
+    gameFinished = false;
+
+  } else {
+
+    if (gameHistory.length === 0) return;
+
+    const last = gameHistory.pop();
+    const player = players[last.playerIndex];
+
+    // ★プレイヤーも戻す
+    currentPlayer = last.playerIndex;
+
+    // throws復元
+    throws = [...last.throws];
+    throwIndex = throws.length;
+
+    // score復元
+    if (last.bust) {
+      const total = throws.reduce((a, b) => a + b.value, 0);
+      player.score = last.startScore - total;
+    } else {
+      player.score = last.endScore;
+    }
+
+    // ラウンド調整
+    if (currentPlayer === players.length - 1) {
+      round--;
+    }
+
+    isBust = false;
+    gameFinished = false;
   }
+
+  roundStartScore = players[currentPlayer].score;
 
   updateThrowDisplay();
   updatePlayerArea();
@@ -239,15 +221,12 @@ function undo() {
 }
 
 // -----------------------------
-// Next（ターン終了）
+// Next
 // -----------------------------
 function forceNext() {
 
-  if (!isBust && !gameFinished) {
-    while (throwIndex < 3) {
-      addThrow(0);
-      if (isBust) break;
-    }
+  while (!isBust && !gameFinished && throwIndex < 3) {
+    addThrow(0);
   }
 
   submitRound();
@@ -257,20 +236,16 @@ function forceNext() {
   if (currentPlayer >= players.length) {
     currentPlayer = 0;
 
-    // ★ 20ラウンド制限
     if (round >= 20) {
-      sessionStorage.setItem("resultData", JSON.stringify(players));
-      sessionStorage.setItem("winner", players[currentPlayer].name);
-      sessionStorage.setItem("startScore", players[currentPlayer].startScore);
-      window.location.href = "result.html";
+      finishGame(players[currentPlayer]);
       return;
     }
 
     round++;
     updateRoundDisplay();
   }
+
   gameFinished = false;
-  updatePlayerArea();
   startTurn();
 }
 
@@ -280,59 +255,66 @@ function forceNext() {
 function submitRound() {
 
   const total = throws.reduce((a, b) => a + b.value, 0);
-  const newScore = roundStartScore - total;
-
-  //ラウンド終了時のスコアを保持しておく 
-  players[currentPlayer].finishScore.push(newScore);
+  let newScore = roundStartScore - total;
 
   if (isBust) {
-    resetRound();
-    return;
+    newScore = roundStartScore;
   }
 
-  // -----------------------------
-  // フィニッシュ（0点）
-  // -----------------------------
-  if (newScore === 0) {
+  // フィニッシュ判定
+  if (newScore === 0 && !isBust) {
     const last = throws[throws.length - 1];
 
     if (!checkFinish(last)) {
-      players[currentPlayer].score = roundStartScore;
-      resetRound();
+      newScore = roundStartScore;
+    } else {
+      gameFinished = true;
+      players[currentPlayer].score = 0;
+
+      saveHistory(newScore);
+      checkAwards(players[currentPlayer], throws, total);
+
+      finishGame(players[currentPlayer]);
       return;
     }
-
-    gameFinished = true;   // ← 勝利確定はここだけで立てる
-    players[currentPlayer].score = 0;
-
-    players[currentPlayer].roundScores.push(throws);
-    checkAwards(players[currentPlayer], throws, total);
-
-    updatePlayerArea();
-    resetRound();
-
-    sessionStorage.setItem("resultData", JSON.stringify(players));
-    sessionStorage.setItem("winner", players[currentPlayer].name);
-    sessionStorage.setItem("startScore", players[currentPlayer].startScore);
-
-    window.location.href = "result.html";
-    return;
   }
 
-  // -----------------------------
-  // 通常スコア更新
-  // -----------------------------
   players[currentPlayer].score = newScore;
 
-  players[currentPlayer].roundScores.push(throws);
+  saveHistory(newScore);
   checkAwards(players[currentPlayer], throws, total);
 
-  updatePlayerArea();
   resetRound();
 }
 
 // -----------------------------
-// ラウンドリセット
+// 履歴保存
+// -----------------------------
+function saveHistory(newScore) {
+  const entry = {
+    playerIndex: currentPlayer,
+    startScore: roundStartScore,
+    throws: [...throws],
+    endScore: newScore,
+    bust: isBust
+  };
+
+  players[currentPlayer].history.push(entry);
+  gameHistory.push(entry); // ★これが重要
+}
+
+// -----------------------------
+// 終了処理
+// -----------------------------
+function finishGame(player) {
+  sessionStorage.setItem("resultData", JSON.stringify(players));
+  sessionStorage.setItem("winner", player.name);
+  sessionStorage.setItem("startScore", player.startScore);
+  window.location.href = "result.html";
+}
+
+// -----------------------------
+// リセット
 // -----------------------------
 function resetRound() {
   throws = [];
@@ -350,23 +332,9 @@ function resetRound() {
 function startTurn() {
   isBust = false;
   roundStartScore = players[currentPlayer].score;
+
   updatePlayerArea();
   updateThrowDisplay();
-}
-
-// -----------------------------
-// 数字ボタン生成
-// -----------------------------
-function createNumberButtons() {
-  const grid = document.getElementById("numberGrid");
-  grid.innerHTML = "";
-
-  for (let i = 1; i <= 20; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = "S-" + i;
-    btn.onclick = () => addThrow(i);
-    grid.appendChild(btn);
-  }
 }
 
 // -----------------------------
@@ -376,10 +344,7 @@ function checkFinish(lastThrow) {
   if (outType === "single") return true;
 
   if (outType === "double") {
-    return (
-      lastThrow.label.startsWith("D-") ||
-      lastThrow.label === "D-BULL"
-    );
+    return lastThrow.label.startsWith("D-") || lastThrow.label === "D-BULL";
   }
 
   if (outType === "master") {
@@ -395,7 +360,23 @@ function checkFinish(lastThrow) {
 }
 
 // -----------------------------
-// アワード判定（3 IN A BED 修正版）
+// 80%スタッツ
+// -----------------------------
+function checkEightyStats() {
+  const p = players[currentPlayer];
+  if (p.eightyFixed) return;
+
+  const removed = p.startScore - p.score;
+
+  if (removed >= p.startScore * 0.8) {
+    p.eightyFixed = true;
+    p.eightyScore = p.score;
+    p.eightyDarts = (round - 1) * 3 + throwIndex;
+  }
+}
+
+// -----------------------------
+// アワード
 // -----------------------------
 function checkAwards(player, throws, roundScore) {
   if (roundScore === 180) {
@@ -416,25 +397,18 @@ function checkAwards(player, throws, roundScore) {
     player.awards.push("THREE IN THE BLACK");
   }
 
-  // ★ 3 IN A BED（MISS や BULL を除外）
   const parts = labels.map(l => l.split("-"));
 
   const valid = parts.every(p =>
     p.length === 2 &&
     p[1] !== "BULL" &&
     p[1] !== "MISS" &&
-    p[1] !== "0" && 
     p[0] !== "S"
   );
 
   if (valid) {
-    const sameBed =
-      parts[0][0] === parts[1][0] &&
-      parts[1][0] === parts[2][0];
-
-    const sameNum =
-      parts[0][1] === parts[1][1] &&
-      parts[1][1] === parts[2][1];
+    const sameBed = parts.every(p => p[0] === parts[0][0]);
+    const sameNum = parts.every(p => p[1] === parts[0][1]);
 
     if (sameBed && sameNum) {
       player.awards.push("3 IN A BED");
