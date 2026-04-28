@@ -44,6 +44,7 @@ function initGame(settings) {
     name: name,
     score: Number(settings.startScore),
     startScore: Number(settings.startScore),
+    finishScore: [],
     roundScores: [],
     awards: [],
     eightyFixed: false,
@@ -168,20 +169,17 @@ function addThrow(base) {
     label = "MISS";
   }
 
-  const currentRoundTotal = throws.reduce((a, b) => a + b.value, 0);
-  const tempScore = roundStartScore - (currentRoundTotal + value);
+  players[currentPlayer].score -= value;
 
   // -----------------------------
   // Bust 判定
   // -----------------------------
-  if (tempScore < 0 || (outType !== "single" && tempScore === 1)) {
+  if (players[currentPlayer].score < 0 || (outType !== "single" && tempScore === 1)) {
     isBust = true;
     gameFinished = true;   // ← Bust はラウンド終了なので OK
 
     throws.push({ value, label });
     throwIndex++;
-
-    players[currentPlayer].score = roundStartScore;
 
     updateThrowDisplay();
     updatePlayerArea();
@@ -193,9 +191,6 @@ function addThrow(base) {
   // -----------------------------
   throws.push({ value, label });
   throwIndex++;
-
-  const total = throws.reduce((a, b) => a + b.value, 0);
-  players[currentPlayer].score = roundStartScore - total;
 
   updateThrowDisplay();
   updatePlayerArea();
@@ -212,19 +207,35 @@ function addThrow(base) {
 // Back（取り消し）
 // -----------------------------
 function undo() {
-  if (throwIndex === 0) return;
+  if(round === 1 && throws.length === 0)return;
 
-  throws.pop();
-  throwIndex--;
+  if (throwIndex === 0){
+    //前のラウンドに戻らなければならない場合
+    currentPlayer--;
+    throwIndex = 3;
+    if(currentPlayer < 0){
+      currentPlayer = 0;
+      round--;
+      if(round < 1){
+        round = 1;
+      }
+      players[currentPlayer].score = players[currentPlayer].finishScore.pop();
+      throws = players[currentPlayer].roundScores.pop();
+    }
+  }else{
+    //今のラウンドで完結する場合
+    let th = throws.pop();
+    throwIndex--;
 
-  isBust = false;
-  gameFinished = false;   // ★戻したら再び入力可能にする
-
-  const total = throws.reduce((a, b) => a + b.value, 0);
-  players[currentPlayer].score = roundStartScore - total;
+    isBust = false;
+    gameFinished = false;   // ★戻したら再び入力可能にする
+    console.log(th);
+    players[currentPlayer].score += th.value;
+  }
 
   updateThrowDisplay();
   updatePlayerArea();
+  updateRoundDisplay();
 }
 
 // -----------------------------
@@ -268,13 +279,16 @@ function forceNext() {
 // -----------------------------
 function submitRound() {
 
+  const total = throws.reduce((a, b) => a + b.value, 0);
+  const newScore = roundStartScore - total;
+
+  //ラウンド終了時のスコアを保持しておく 
+  players[currentPlayer].finishScore.push(newScore);
+
   if (isBust) {
     resetRound();
     return;
   }
-
-  const total = throws.reduce((a, b) => a + b.value, 0);
-  const newScore = roundStartScore - total;
 
   // -----------------------------
   // フィニッシュ（0点）
@@ -291,7 +305,7 @@ function submitRound() {
     gameFinished = true;   // ← 勝利確定はここだけで立てる
     players[currentPlayer].score = 0;
 
-    players[currentPlayer].roundScores.push(total);
+    players[currentPlayer].roundScores.push(throws);
     checkAwards(players[currentPlayer], throws, total);
 
     updatePlayerArea();
@@ -310,7 +324,7 @@ function submitRound() {
   // -----------------------------
   players[currentPlayer].score = newScore;
 
-  players[currentPlayer].roundScores.push(total);
+  players[currentPlayer].roundScores.push(throws);
   checkAwards(players[currentPlayer], throws, total);
 
   updatePlayerArea();

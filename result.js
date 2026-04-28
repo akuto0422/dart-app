@@ -5,7 +5,7 @@ const startScore = Number(sessionStorage.getItem("startScore"));
 document.getElementById("winnerName").textContent = `${winner} WIN!`;
 
 function calcFinalStats(player) {
-  const total = player.roundScores.reduce((a, b) => a + b, 0);
+  const total = player.roundScores.map((scores)=>scores.reduce((a,b)=>a+b.value,0)).reduce((a,b)=>a+b,0);
   const rounds = player.roundScores.length;
   if (rounds === 0) return "0.00";
   return (total / rounds).toFixed(2);
