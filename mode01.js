@@ -360,7 +360,7 @@ function submitRound() {
 
       eightyResult = eighty;
 
-      saveHistory(newScore, earnedAwards);
+      saveHistory(roundStartScore - total, earnedAwards);
       
       finishGame(players[currentPlayer]);
       return;
@@ -379,7 +379,7 @@ function submitRound() {
 
   eightyResult = eighty;
 
-  saveHistory(newScore, earnedAwards);
+  saveHistory(roundStartScore - total, earnedAwards);
 
   resetRound();
 }
