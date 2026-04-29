@@ -15,6 +15,11 @@ let separable = "yes";
 let roundStartScore = 0;
 let isBust = false;
 let gameFinished = false;
+let eightyResult = null; // グローバル追加
+let gameEightyFixed = false;
+let gameEightyTriggerPlayer = null;
+let gameEightyRound = null;
+let playerRoundsAtEighty = [];
 
 let gameHistory = [];
 
@@ -37,11 +42,12 @@ function initGame(settings) {
     startScore: Number(settings.startScore),
 
     history: [],
-
     awards: [],
+
     eightyFixed: false,
     eightyScore: 0,
-    eightyDarts: 0
+
+    eightyRound: null // ★追加（その人の到達ラウンド）
   }));
 
   outType = settings.outType;
@@ -161,8 +167,7 @@ function addThrow(base) {
 
   updateThrowDisplay();
   updatePlayerArea();
-
-  checkEightyStats();
+  players[currentPlayer].lastRound = round;
 }
 
 // -----------------------------
@@ -170,6 +175,7 @@ function addThrow(base) {
 // -----------------------------
 function undo() {
 
+  let tmplast;
   // ラウンド内
   if (throwIndex > 0) {
     const player = players[currentPlayer];
@@ -182,15 +188,27 @@ function undo() {
     isBust = false;
     gameFinished = false;
 
+    // ★追加
+    if (throwIndex === 0) {
+      roundStartScore = player.score;
+    }
   } else {
 
     if (gameHistory.length === 0) return;
 
     const last = gameHistory.pop();
+    tmplast = last;
     const player = players[last.playerIndex];
+
+    // ★ここ追加
+    if (last.awards && last.awards.length > 0) {
+      player.awards.splice(-last.awards.length);
+    }
 
     // ★プレイヤーも戻す
     currentPlayer = last.playerIndex;
+
+    player.history.pop();
 
     // throws復元
     throws = [...last.throws];
@@ -209,11 +227,25 @@ function undo() {
       round--;
     }
 
+    // undo内（ラウンド戻し時）
+    if (last.eighty) {
+
+      gameEightyFixed = false;
+      gameEightyRound = null;
+      gameEightyTriggerPlayer = null;
+
+      players.forEach(p => {
+        p.eightyFixed = false;
+        p.eightyScore = 0;
+        p.eightyRound = null; // ★追加
+      });
+    }
+
     isBust = false;
     gameFinished = false;
   }
 
-  roundStartScore = players[currentPlayer].score;
+  roundStartScore = tmplast ? tmplast.startScore : players[currentPlayer].score;
 
   updateThrowDisplay();
   updatePlayerArea();
@@ -271,18 +303,37 @@ function submitRound() {
       gameFinished = true;
       players[currentPlayer].score = 0;
 
-      saveHistory(newScore);
-      checkAwards(players[currentPlayer], throws, total);
+      const earnedAwards = checkAwards(players[currentPlayer], throws, total);
 
+      // ★ここ追加
+      const eighty = handleEightyAtRoundEnd(
+        players[currentPlayer],
+        roundStartScore,
+        newScore
+      );
+
+      eightyResult = eighty;
+
+      saveHistory(newScore, earnedAwards);
+      
       finishGame(players[currentPlayer]);
       return;
     }
   }
 
   players[currentPlayer].score = newScore;
+  const earnedAwards = checkAwards(players[currentPlayer], throws, total);
 
-  saveHistory(newScore);
-  checkAwards(players[currentPlayer], throws, total);
+  // ★ここ追加
+  const eighty = handleEightyAtRoundEnd(
+    players[currentPlayer],
+    roundStartScore,
+    newScore
+  );
+
+  eightyResult = eighty;
+
+  saveHistory(newScore, earnedAwards);
 
   resetRound();
 }
@@ -290,17 +341,21 @@ function submitRound() {
 // -----------------------------
 // 履歴保存
 // -----------------------------
-function saveHistory(newScore) {
+function saveHistory(newScore, awards) {
   const entry = {
     playerIndex: currentPlayer,
     startScore: roundStartScore,
     throws: [...throws],
     endScore: newScore,
-    bust: isBust
+    bust: isBust,
+    awards: awards || [],
+    eighty: eightyResult // ★追加
   };
 
   players[currentPlayer].history.push(entry);
-  gameHistory.push(entry); // ★これが重要
+  gameHistory.push(entry);
+
+  eightyResult = null; // ★リセット重要
 }
 
 // -----------------------------
@@ -362,39 +417,68 @@ function checkFinish(lastThrow) {
 // -----------------------------
 // 80%スタッツ
 // -----------------------------
-function checkEightyStats() {
-  const p = players[currentPlayer];
-  if (p.eightyFixed) return;
+function handleEightyAtRoundEnd(player, roundStartScore, newScore) {
 
-  const removed = p.startScore - p.score;
+  if (gameEightyFixed) return null;
+  if (isBust) return null;
 
-  if (removed >= p.startScore * 0.8) {
-    p.eightyFixed = true;
-    p.eightyScore = p.score;
-    p.eightyDarts = (round - 1) * 3 + throwIndex;
+  const threshold = player.startScore * 0.8;
+
+  const startRemoved = player.startScore - roundStartScore;
+  const endRemoved = player.startScore - newScore;
+
+  if (startRemoved < threshold && endRemoved >= threshold) {
+
+    gameEightyFixed = true;
+    gameEightyRound = round;
+    gameEightyTriggerPlayer = currentPlayer;
+
+    // ★ここが重要（プレイヤーごとに保存）
+    players.forEach(p => {
+
+      p.eightyFixed = true;
+      p.eightyScore = p.score;
+
+      // ★各プレイヤーの「到達ラウンド」を固定
+      if (p === player) {
+        p.eightyRound = round;
+      } else {
+        p.eightyRound = round - (currentPlayer - players.indexOf(p));
+      }
+    });
+
+    return {
+      fixed: true,
+      round: round,
+      triggerPlayer: currentPlayer
+    };
   }
+
+  return null;
 }
 
 // -----------------------------
 // アワード
 // -----------------------------
 function checkAwards(player, throws, roundScore) {
+  const earned = [];
+
   if (roundScore === 180) {
-    player.awards.push("TON80");
+    earned.push("TON80");
   } else if (roundScore >= 151) {
-    player.awards.push("HIGH TON");
+    earned.push("HIGH TON");
   } else if (roundScore >= 100) {
-    player.awards.push("LOW TON");
+    earned.push("LOW TON");
   }
 
   const labels = throws.map(t => t.label);
 
   if (labels.every(l => l === "S-BULL" || l === "D-BULL")) {
-    player.awards.push("HAT TRICK");
+    earned.push("HAT TRICK");
   }
 
   if (labels.every(l => l === "D-BULL")) {
-    player.awards.push("THREE IN THE BLACK");
+    earned.push("THREE IN THE BLACK");
   }
 
   const parts = labels.map(l => l.split("-"));
@@ -411,7 +495,12 @@ function checkAwards(player, throws, roundScore) {
     const sameNum = parts.every(p => p[1] === parts[0][1]);
 
     if (sameBed && sameNum) {
-      player.awards.push("3 IN A BED");
+      earned.push("3 IN A BED");
     }
   }
+
+  // ここでまとめて追加
+  player.awards.push(...earned);
+
+  return earned; // ★追加
 }

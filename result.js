@@ -5,17 +5,18 @@ const startScore = Number(sessionStorage.getItem("startScore"));
 document.getElementById("winnerName").textContent = `${winner} WIN!`;
 
 function calcFinalStats(player) {
-  const total = player.roundScores.map((scores)=>scores.reduce((a,b)=>a+b.value,0)).reduce((a,b)=>a+b,0);
-  const rounds = player.roundScores.length;
+  const total = player.history.map((h)=>h['throws'].reduce((a,b)=>a+b.value,0)).reduce((a,b)=>a+b,0);
+  const rounds = player.history.length;
   if (rounds === 0) return "0.00";
   return (total / rounds).toFixed(2);
 }
 
 function calcEightyStats(player) {
-  if (!player.eightyFixed || !player.eightyDarts) return "-";
+  if (!player.eightyFixed || !player.eightyRound) return "-";
 
   const removed = player.startScore - player.eightyScore;
-  const rounds = player.eightyDarts / 3;
+  const rounds = player.history.slice(0,player.eightyRound).filter((h)=>h['bust'] === false).length;
+
 
   return (removed / rounds).toFixed(2);
 }
