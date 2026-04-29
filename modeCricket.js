@@ -9,6 +9,9 @@ let throwIndex = 0;
 let gameType = "standard";  // ★ Standard / Cutthroat
 let turnStartMarks = [];
 let turnStartScores = [];
+let turnStartTotalMarks = [];
+let throwHistory = [];
+let turnHistory = [];
 
 // ★ 追加：ゲーム終了フラグ & 80%スタッツ用フラグ
 let gameFinished = false;
@@ -44,11 +47,18 @@ function initGame(settings) {
     // ★ 80%スタッツ用スナップショット
     eightyMarks: 0,   // 6ナンバーオープン時点までの総マーク数
     eightyRounds: 0,   // その時点のラウンド
-    awards: []        // ★追加
+    awards: [],        // ★追加
+    history: [],
+    marksByRound: [],
+    lastRoundCompleted: 0
   }));
 
   currentPlayer = 0;
   round = 1;
+  throws = [];
+  throwIndex = 0;
+  throwHistory = [];
+  turnHistory = [];
   gameFinished = false;
   eightyFixed = false;
 
@@ -56,6 +66,94 @@ function initGame(settings) {
   updateThrowDisplay();
   updateCricketBoard();
   startTurn();
+}
+
+function cloneHistoryEntry(entry) {
+  return {
+    round: entry.round,
+    playerIndex: entry.playerIndex,
+    throws: entry.throws.map(t => ({ ...t })),
+    scoreBefore: entry.scoreBefore,
+    scoreAfter: entry.scoreAfter,
+    marksBefore: { ...entry.marksBefore },
+    marksAfter: { ...entry.marksAfter },
+    marksThisRound: entry.marksThisRound ?? entry.marksThisTurn,
+    awards: [...entry.awards]
+  };
+}
+
+function clonePlayerState(player) {
+  return {
+    name: player.name,
+    score: player.score,
+    marks: { ...player.marks },
+    eightyMarks: player.eightyMarks,
+    eightyRounds: player.eightyRounds,
+    awards: [...player.awards],
+    history: player.history.map(cloneHistoryEntry),
+    marksByRound: [...player.marksByRound],
+    lastRoundCompleted: player.lastRoundCompleted
+  };
+}
+
+function cloneSnapshotState(state) {
+  return {
+    currentPlayer: state.currentPlayer,
+    round: state.round,
+    throws: state.throws.map(t => ({ ...t })),
+    throwIndex: state.throwIndex,
+    players: state.players.map(clonePlayerState),
+    gameFinished: state.gameFinished,
+    eightyFixed: state.eightyFixed,
+    throwHistory: state.throwHistory ? state.throwHistory.map(cloneSnapshotState) : []
+  };
+}
+
+function snapshotThrowState() {
+  throwHistory.push(cloneSnapshotState({
+    currentPlayer,
+    round,
+    throws,
+    throwIndex,
+    players,
+    gameFinished,
+    eightyFixed,
+    throwHistory: throwHistory.map(cloneSnapshotState)
+  }));
+}
+
+function restoreGameState(state) {
+  currentPlayer = state.currentPlayer;
+  round = state.round;
+  throws = state.throws.map(t => ({ ...t }));
+  throwIndex = state.throwIndex;
+  players = state.players.map(player => ({
+    name: player.name,
+    score: player.score,
+    marks: { ...player.marks },
+    eightyMarks: player.eightyMarks,
+    eightyRounds: player.eightyRounds,
+    awards: [...player.awards],
+    history: player.history.map(cloneHistoryEntry),
+    marksByRound: [...player.marksByRound],
+    lastRoundCompleted: player.lastRoundCompleted
+  }));
+  gameFinished = state.gameFinished;
+  eightyFixed = state.eightyFixed;
+  throwHistory = state.throwHistory ? state.throwHistory.map(cloneSnapshotState) : [];
+}
+
+function snapshotCompletedTurnState() {
+  turnHistory.push({
+    currentPlayer,
+    round,
+    throws: throws.map(t => ({ ...t })),
+    throwIndex,
+    players: players.map(clonePlayerState),
+    gameFinished,
+    eightyFixed,
+    throwHistory: throwHistory.map(cloneSnapshotState)
+  });
 }
 
 // -----------------------------
@@ -101,10 +199,18 @@ function checkEightyStats() {
 
   if (!someoneSixOpened) return;
 
-  // ★ この時点の各プレイヤーの総マーク数とラウンドを保存
-  players.forEach(p => {
-    p.eightyMarks = getTotalMarks(p);
-    p.eightyRounds = round;
+  // ★ この時点の各プレイヤーのスタッツ対象マーク数とラウンド数を保存
+  players.forEach((p, idx) => {
+    const baseMarks = p.marksByRound.slice(1, round).reduce((sum, v) => sum + (v || 0), 0);
+    const hasPlayedThisRound = p.lastRoundCompleted >= round || idx === currentPlayer;
+
+    if (hasPlayedThisRound) {
+      p.eightyMarks = getTotalMarks(p);
+      p.eightyRounds = round;
+    } else {
+      p.eightyMarks = baseMarks;
+      p.eightyRounds = round - 1;
+    }
   });
 
   eightyFixed = true;
@@ -118,6 +224,8 @@ function addThrow(label) {
   if (gameFinished) return;
 
   if (throwIndex >= 3) return;
+
+  snapshotThrowState();
 
   const p = players[currentPlayer];
   const [bed, num] = label.split("-");
@@ -145,6 +253,7 @@ function addThrow(label) {
 
   const before = p.marks[target];
   const after  = before + mark;
+  const appliedMarks = Math.min(mark, Math.max(0, 3 - before));
 
   // ★ 前回までのオーバー分と今回のオーバー分の差分だけを使う
   const prevOver = Math.max(0, before - 3);
@@ -155,6 +264,7 @@ function addThrow(label) {
   p.marks[target] = after;
 
   let gainedScore = 0;
+  let scoreChanges = [];
 
   if (overflow > 0) {
     const base = target === "BULL" ? 25 : Number(target);
@@ -165,6 +275,7 @@ function addThrow(label) {
         // 1人プレイは常に得点OK
         gainedScore = overflow * base;
         p.score += gainedScore;
+        scoreChanges.push({ playerIndex: currentPlayer, delta: gainedScore });
 
       } else {
         const othersClosed = players
@@ -174,6 +285,7 @@ function addThrow(label) {
         if (!othersClosed) {
           gainedScore = overflow * base;
           p.score += gainedScore;
+          scoreChanges.push({ playerIndex: currentPlayer, delta: gainedScore });
         }
       }
 
@@ -183,6 +295,7 @@ function addThrow(label) {
         if (idx !== currentPlayer && pl.marks[target] < 3) {
           const s = overflow * base;
           pl.score += s;
+          scoreChanges.push({ playerIndex: idx, delta: s });
         }
       });
     }
@@ -193,14 +306,14 @@ function addThrow(label) {
     label,
     mark,
     target,
-    scoreDelta: gainedScore
+    appliedMarks,
+    scoreDelta: gainedScore,
+    scoreChanges
   });
 
   throwIndex++;
   updateThrowDisplay();
   updateCricketBoard();
-
-  checkAwardsCricket(players[currentPlayer], throws);
 
   // ★ 80%スタッツ確定チェック（誰かが6ナンバーオープンしたか）
   checkEightyStats();
@@ -236,29 +349,34 @@ function checkGameFinishedAfterThrow() {
 // Undo
 // -----------------------------
 function undo() {
-  if (throwIndex === 0) return;
+  if (throwIndex > 0) {
+    if (throwHistory.length > 0) {
+      const prevState = throwHistory.pop();
+      restoreGameState(prevState);
+      updateRoundDisplay();
+      updateThrowDisplay();
+      updateCricketBoard();
+      return;
+    }
 
-  const last = throws.pop();
-  throwIndex--;
-
-  const p = players[currentPlayer];
-
-  // 得点を戻す
-  if (last.scoreDelta) {
-    p.score -= last.scoreDelta;
+    const lastThrow = throws[throws.length - 1];
+    if (lastThrow && lastThrow.label === "MISS") {
+      throws.pop();
+      throwIndex--;
+      updateThrowDisplay();
+      updateCricketBoard();
+      return;
+    }
   }
 
-  // マークを戻す
-  if (last.target) {
-    p.marks[last.target] -= last.mark;
-    if (p.marks[last.target] < 0) p.marks[last.target] = 0;
-  }
+  if (turnHistory.length === 0) return;
 
+  const prevState = turnHistory.pop();
+  restoreGameState(prevState);
+
+  updateRoundDisplay();
   updateThrowDisplay();
   updateCricketBoard();
-
-  // Undo したので、終了フラグは再評価が必要
-  gameFinished = false;
 }
 
 // -----------------------------
@@ -310,6 +428,44 @@ function forceNext() {
 // ターン終了
 // -----------------------------
 function submitTurn() {
+  if (throwIndex < 3) {
+    while (throwIndex < 3) {
+      throws.push({
+        label: "MISS",
+        mark: 0,
+        target: null,
+        appliedMarks: 0,
+        scoreDelta: 0,
+        scoreChanges: []
+      });
+      throwIndex++;
+    }
+  }
+
+  const player = players[currentPlayer];
+  const awardsEarned = checkAwardsCricket(player, throws);
+  if (awardsEarned.length > 0) {
+    player.awards.push(...awardsEarned);
+  }
+
+  const currentTotalMarks = getTotalMarks(player);
+  const marksThisTurn = currentTotalMarks - turnStartTotalMarks[currentPlayer];
+  player.marksByRound[round] = marksThisTurn;
+  player.lastRoundCompleted = round;
+
+  player.history.push({
+    round,
+    playerIndex: currentPlayer,
+    throws: throws.map(t => ({ ...t })),
+    scoreBefore: turnStartScores[currentPlayer],
+    scoreAfter: player.score,
+    marksBefore: { ...turnStartMarks[currentPlayer] },
+    marksAfter: { ...player.marks },
+    marksThisTurn,
+    awards: [...awardsEarned]
+  });
+
+  snapshotCompletedTurnState();
   resetTurn();
 }
 
@@ -328,6 +484,8 @@ function resetTurn() {
 function startTurn() {
   turnStartMarks = players.map(p => ({ ...p.marks }));
   turnStartScores = players.map(p => p.score);
+  turnStartTotalMarks = players.map(p => getTotalMarks(p));
+  throwHistory = [];
 
   updateThrowDisplay();
 }
@@ -336,15 +494,31 @@ function startTurn() {
 // 勝利判定
 // -----------------------------
 function checkWinner() {
-  for (let i = 0; i < players.length; i++) {
-    const p = players[i];
-    const allClosed = Object.values(p.marks).every(m => m >= 3);
-    if (!allClosed) continue;
+  const closedPlayers = players.filter(p => Object.values(p.marks).every(m => m >= 3));
+  if (closedPlayers.length === 0) return -1;
 
-    const scoreOK = players.every(other => p.score >= other.score);
-    if (scoreOK) return i;
+  if (gameType === "standard") {
+    const maxScore = Math.max(...closedPlayers.map(p => p.score));
+    const winnerCandidates = closedPlayers.filter(p => p.score === maxScore);
+    if (winnerCandidates.length !== 1) return -1;
+
+    const winner = winnerCandidates[0];
+    const scoreHigherThanOthers = players.every(other =>
+      other === winner || winner.score > other.score
+    );
+    return scoreHigherThanOthers ? players.indexOf(winner) : -1;
   }
-  return -1;
+
+  // Cutthroat
+  const minScore = Math.min(...closedPlayers.map(p => p.score));
+  const winnerCandidates = closedPlayers.filter(p => p.score === minScore);
+  if (winnerCandidates.length !== 1) return -1;
+
+  const winner = winnerCandidates[0];
+  const scoreLowerThanOthers = players.every(other =>
+    other === winner || winner.score < other.score
+  );
+  return scoreLowerThanOthers ? players.indexOf(winner) : -1;
 }
 
 // -----------------------------
@@ -440,6 +614,7 @@ function addThrowLite(label) {
 }
 
 function checkAwardsCricket(player, throws) {
+  const earned = [];
   const labels = throws.map(t => t.label);
   const targets = throws.map(t => t.target);
   const marks = throws.map(t => t.mark);
@@ -447,62 +622,62 @@ function checkAwardsCricket(player, throws) {
   const totalMarks = marks.reduce((a, b) => a + b, 0);
 
   // -----------------------------
-  // WHITE HORSE（T ×3、異なるナンバー、未クローズ）
+  // WHITE HORSE（T ×3、異なるナンバー、かつ各トリプルが有効に3マーク分入っている）
   // -----------------------------
-  const isAllTriple = labels.every(l => l.startsWith("T-"));
-  const uniqueTargets = [...new Set(targets)];
+  if (throws.length >= 3) {
+    const validTriples = throws.filter(t =>
+      t.label.startsWith("T-") &&
+      t.appliedMarks === 3
+    );
 
-  const allOpen = uniqueTargets.every(num => {
-    if (!num) return false;
-    return player.marks[num] < 3;
-  });
+    const uniqueTripleTargets = [...new Set(validTriples.map(t => t.target))];
 
-  if (
-    isAllTriple &&
-    uniqueTargets.length === 3 &&
-    allOpen
-  ) {
-    player.awards.push("WHITE HORSE");
-  }
+    if (
+      validTriples.length >= 3 &&
+      uniqueTripleTargets.length >= 3
+    ) {
+      earned.push("WHITE HORSE");
+    }
 
-  // -----------------------------
-  // HAT TRICK（BULL ×3）
-  // -----------------------------
-  if (labels.every(l => l === "S-BULL" || l === "D-BULL")) {
-    player.awards.push("HAT TRICK");
-  }
+    // -----------------------------
+    // HAT TRICK（BULL ×3）
+    // -----------------------------
+    if (labels.length >= 3 && labels.every(l => l === "S-BULL" || l === "D-BULL")) {
+      earned.push("HAT TRICK");
+    }
 
-  // -----------------------------
-  // THREE IN THE BLACK（D-BULL ×3）
-  // -----------------------------
-  if (labels.every(l => l === "D-BULL")) {
-    player.awards.push("THREE IN THE BLACK");
-  }
+    // -----------------------------
+    // THREE IN THE BLACK（D-BULL ×3）
+    // -----------------------------
+    if (labels.length >= 3 && labels.every(l => l === "D-BULL")) {
+      earned.push("THREE IN THE BLACK");
+    }
 
-  // -----------------------------
-  // 3 IN A BED（同じナンバー × 同じ倍率 ×3）
-  // -----------------------------
-  const parts = labels.map(l => l.split("-"));
+    // -----------------------------
+    // 3 IN A BED（同じナンバー × 同じ倍率 ×3）
+    // -----------------------------
+    const parts = labels.map(l => l.split("-"));
 
-  const validBed = parts.every(p =>
-    p.length === 2 &&
-    p[1] !== "BULL" &&
-    p[1] !== "MISS" &&
-    p[1] !== "0" && 
-    p[0] !== "S"
-  );
+    const validBed = parts.length >= 3 && parts.every(p =>
+      p.length === 2 &&
+      p[1] !== "BULL" &&
+      p[1] !== "MISS" &&
+      p[1] !== "0" && 
+      p[0] !== "S"
+    );
 
-  if (validBed) {
-    const sameBed =
-      parts[0][0] === parts[1][0] &&
-      parts[1][0] === parts[2][0];
+    if (validBed) {
+      const sameBed =
+        parts[0][0] === parts[1][0] &&
+        parts[1][0] === parts[2][0];
 
-    const sameNum =
-      parts[0][1] === parts[1][1] &&
-      parts[1][1] === parts[2][1];
+      const sameNum =
+        parts[0][1] === parts[1][1] &&
+        parts[1][1] === parts[2][1];
 
-    if (sameBed && sameNum) {
-      player.awards.push("3 IN A BED");
+      if (sameBed && sameNum) {
+        earned.push("3 IN A BED");
+      }
     }
   }
 
@@ -510,6 +685,8 @@ function checkAwardsCricket(player, throws) {
   // MARK 系（5〜9 MARK）
   // -----------------------------
   if (totalMarks >= 5) {
-    player.awards.push(`${totalMarks} MARK`);
+    earned.push(`${totalMarks} MARK`);
   }
+
+  return earned;
 }

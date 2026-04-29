@@ -21,6 +21,7 @@ let gameEightyTriggerPlayer = null;
 let gameEightyRound = null;
 let playerRoundsAtEighty = [];
 
+let throwHistory = [];
 let gameHistory = [];
 
 // -----------------------------
@@ -61,6 +62,7 @@ function initGame(settings) {
   updateRoundDisplay();
   updateThrowDisplay();
   updateNumberButtons();
+  throwHistory = [];
   startTurn();
 }
 
@@ -133,6 +135,16 @@ function addThrow(base) {
   if (gameFinished) return;
   if (throwIndex >= 3) return;
 
+  // snapshot before the throw so undo can restore exact state
+  throwHistory.push({
+    throws: [...throws],
+    throwIndex,
+    score: players[currentPlayer].score,
+    roundStartScore,
+    isBust,
+    gameFinished
+  });
+
   let value = base;
   let label = "";
 
@@ -178,19 +190,22 @@ function undo() {
   let tmplast;
   // ラウンド内
   if (throwIndex > 0) {
-    const player = players[currentPlayer];
-
-    const th = throws.pop();
-    throwIndex--;
-
-    player.score += th.value;
-
-    isBust = false;
-    gameFinished = false;
-
-    // ★追加
-    if (throwIndex === 0) {
-      roundStartScore = player.score;
+    if (throwHistory.length > 0) {
+      const snap = throwHistory.pop();
+      throws = [...snap.throws];
+      throwIndex = snap.throwIndex;
+      players[currentPlayer].score = snap.score;
+      roundStartScore = snap.roundStartScore;
+      isBust = snap.isBust;
+      gameFinished = snap.gameFinished;
+    } else {
+      const player = players[currentPlayer];
+      const th = throws.pop();
+      throwIndex--;
+      player.score += th.value;
+      isBust = false;
+      gameFinished = false;
+      roundStartScore = player.score + throws.reduce((sum, t) => sum + t.value, 0);
     }
   } else {
 
@@ -214,18 +229,41 @@ function undo() {
     throws = [...last.throws];
     throwIndex = throws.length;
 
-    // score復元
-    if (last.bust) {
-      const total = throws.reduce((a, b) => a + b.value, 0);
-      player.score = last.startScore - total;
+    // score復元: 前のラウンド状態を復元するので終了時のスコアに戻す
+    player.score = last.endScore;
+    roundStartScore = last.startScore;
+    isBust = false;
+    gameFinished = false;
+    multiplier = "s";
+
+    // restore throw snapshots for the restored round so further undo works correctly
+    if (last.throwHistory && last.throwHistory.length > 0) {
+      throwHistory = last.throwHistory.map(snapshot => ({
+        throws: [...snapshot.throws],
+        throwIndex: snapshot.throwIndex,
+        score: snapshot.score,
+        roundStartScore: snapshot.roundStartScore,
+        isBust: snapshot.isBust,
+        gameFinished: snapshot.gameFinished
+      }));
     } else {
-      player.score = last.endScore;
+      throwHistory = [];
+      let scoreAt = last.startScore;
+      for (let i = 0; i < last.throws.length; i++) {
+        throwHistory.push({
+          throws: last.throws.slice(0, i),
+          throwIndex: i,
+          score: scoreAt,
+          roundStartScore: last.startScore,
+          isBust: false,
+          gameFinished: false
+        });
+        scoreAt -= last.throws[i].value;
+      }
     }
 
     // ラウンド調整
-    if (currentPlayer === players.length - 1) {
-      round--;
-    }
+    round = last.round;
 
     // undo内（ラウンド戻し時）
     if (last.eighty) {
@@ -241,11 +279,19 @@ function undo() {
       });
     }
 
-    isBust = false;
     gameFinished = false;
   }
 
-  roundStartScore = tmplast ? tmplast.startScore : players[currentPlayer].score;
+  if (tmplast) {
+    roundStartScore = tmplast.startScore;
+  }
+
+  if (throws.length > 0 && !isBust) {
+    const computedStart = players[currentPlayer].score + throws.reduce((sum, t) => sum + t.value, 0);
+    if (roundStartScore !== computedStart) {
+      roundStartScore = computedStart;
+    }
+  }
 
   updateThrowDisplay();
   updatePlayerArea();
@@ -343,9 +389,19 @@ function submitRound() {
 // -----------------------------
 function saveHistory(newScore, awards) {
   const entry = {
+    round,
     playerIndex: currentPlayer,
     startScore: roundStartScore,
     throws: [...throws],
+    throwIndex,
+    throwHistory: throwHistory.map(snapshot => ({
+      throws: [...snapshot.throws],
+      throwIndex: snapshot.throwIndex,
+      score: snapshot.score,
+      roundStartScore: snapshot.roundStartScore,
+      isBust: snapshot.isBust,
+      gameFinished: snapshot.gameFinished
+    })),
     endScore: newScore,
     bust: isBust,
     awards: awards || [],
@@ -376,6 +432,7 @@ function resetRound() {
   throwIndex = 0;
   multiplier = "s";
   isBust = false;
+  throwHistory = [];
 
   updateNumberButtons();
   updateThrowDisplay();

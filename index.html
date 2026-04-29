@@ -89,6 +89,24 @@
             text-align: center;
         }
 
+        .patch-list-container {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-top: 12px;
+            text-align: left;
+            padding-right: 8px;
+        }
+
+        .patch-list-container ul {
+            padding-left: 18px;
+            margin: 0;
+        }
+
+        .patch-list-container li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
         /* 閉じるボタン */
         .close {
             float: right;
@@ -118,8 +136,19 @@
     <button class="mode-btn" onclick="selectMode('cricket')">CRICKET</button>
     <button class="mode-btn disabled">COUNT UP（未実装）</button>
 
-    <!-- フィードバックボタン -->
+    <button id="openPatchModal" class="feedback-btn">パッチノート</button>
     <button id="openFeedbackModal" class="feedback-btn">フィードバック</button>
+
+    <!-- パッチノートモーダル -->
+    <div id="patchModal" class="modal">
+        <div class="modal-content">
+            <span id="closePatchModal" class="close">&times;</span>
+            <h3>パッチノート</h3>
+            <div class="patch-list-container">
+                <ul id="patchList"></ul>
+            </div>
+        </div>
+    </div>
 
     <!-- モーダル本体 -->
     <div id="feedbackModal" class="modal">
@@ -137,21 +166,52 @@
     </div>
 
     <script>
-        const modal = document.getElementById("feedbackModal");
-        const openBtn = document.getElementById("openFeedbackModal");
-        const closeBtn = document.getElementById("closeFeedbackModal");
+        const feedbackModal = document.getElementById("feedbackModal");
+        const openFeedbackBtn = document.getElementById("openFeedbackModal");
+        const closeFeedbackBtn = document.getElementById("closeFeedbackModal");
 
-        openBtn.onclick = () => {
-            modal.style.display = "block";
+        const patchModal = document.getElementById("patchModal");
+        const openPatchBtn = document.getElementById("openPatchModal");
+        const closePatchBtn = document.getElementById("closePatchModal");
+
+        const patchList = document.getElementById("patchList");
+
+        const patchNotes = [
+            "Bustした次のラウンドでスコアが入力されない問題を修正",
+            "01の初期設定をセパブルからファットブルへ変更",
+            "ラウンドをまたいだbackに対応",
+            "アワードの判定を修正",
+            "ダブルアウト、マスターアウトも一投目だとあがれない不具合を修正を修正(多分)"
+        ];
+
+        patchNotes.forEach(note => {
+            const item = document.createElement("li");
+            item.textContent = note;
+            patchList.appendChild(item);
+        });
+
+        openFeedbackBtn.onclick = () => {
+            feedbackModal.style.display = "block";
         };
 
-        closeBtn.onclick = () => {
-            modal.style.display = "none";
+        closeFeedbackBtn.onclick = () => {
+            feedbackModal.style.display = "none";
+        };
+
+        openPatchBtn.onclick = () => {
+            patchModal.style.display = "block";
+        };
+
+        closePatchBtn.onclick = () => {
+            patchModal.style.display = "none";
         };
 
         window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.style.display = "none";
+            if (event.target === feedbackModal) {
+                feedbackModal.style.display = "none";
+            }
+            if (event.target === patchModal) {
+                patchModal.style.display = "none";
             }
         };
     </script>

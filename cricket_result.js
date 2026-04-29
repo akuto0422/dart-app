@@ -14,9 +14,8 @@ document.getElementById("winner").textContent = `${winner} WIN!`;
 // MPR（Marks Per Round）
 // -----------------------------
 function calcMPR(player) {
-  // player.roundMarks = [そのラウンドで獲得したマーク数]
-  if (!player.eightyMarks || player.eightyMarks.length === 0) return "0.00";
-  
+  if (!player.eightyMarks || !player.eightyRounds || player.eightyRounds === 0) return "0.00";
+
   const total = player.eightyMarks;
   const rounds = player.eightyRounds;
 
